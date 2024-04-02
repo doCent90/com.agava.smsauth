@@ -26,33 +26,32 @@ namespace Agava.Wink
         [SerializeField] private Button _openSignInButton;
         [SerializeField] private Button _testSignInButton;
         [Header("Phone Number Check Settings")]
-        [SerializeField] private int _numberCount = 10;
-        [SerializeField] private int _codeCount = 3;
+        [SerializeField] private int _maxNumberCount = 30;
+        [SerializeField] private int _minNumberCount = 5;
+        [SerializeField] private int _codeCount = 4;
+        [SerializeField] private bool _additivePlusChar = false;
 
-        private void OnDestroy() => _signInButton.onClick.RemoveAllListeners();
+        private void OnDestroy()
+        {
+            _signInButton.onClick.RemoveAllListeners();
+            _winkAccessManager.OnRefreshFail -= OpenSignWindow;
+            _winkAccessManager.OnSuccessfully -= HideSignInButton;
+        }
 
-        private void Start()
+        private void Awake()
         {
             _signInButton.onClick.AddListener(OnSignInClicked);
 #if UNITY_EDITOR || TEST
             _testSignInButton.onClick.AddListener(OnTestSignInClicked);
+            _testSignInButton.gameObject.SetActive(true);
 #else
             _testSignInButton.gameObject.SetActive(false);
 #endif
-            _openSignInButton.onClick.AddListener(() => _signInWindow.Enable());
+            _openSignInButton.onClick.AddListener(OpenSignWindow);
             _windows.ForEach(window => window.Disable());
 
-            if (PlayerPrefs.HasKey(WinkAccessManager.UnlockKey) == false)
-            {
-                _openSignInButton.gameObject.SetActive(true);
-            }
-            else
-            {
-#if UNITY_EDITOR || TEST
-                _testSignInButton.gameObject.SetActive(false);
-#endif
-                _openSignInButton.gameObject.SetActive(false);
-            }
+            _winkAccessManager.OnSuccessfully += HideSignInButton;
+            _winkAccessManager.OnRefreshFail += OpenSignWindow;
         }
 
 #if UNITY_EDITOR || TEST
@@ -63,6 +62,8 @@ namespace Agava.Wink
         }
 #endif
 
+        private void OpenSignWindow() => _signInWindow.Enable();
+
         private void OnSignInClicked()
         {
             var number = GetNumber();
@@ -72,15 +73,23 @@ namespace Agava.Wink
 
             _proccesOnWindow.Enable();
 
-            _winkAccessManager.SignIn(phoneNumber: number, 
-            checkCodeRequested: () => 
+            _winkAccessManager.Regist(phoneNumber: number,
+            otpCodeRequest: (hasOtpCode) => 
             {
-                _proccesOnWindow.Disable();
-                _enterCodeWindow.Enable(onInputDone: (code) =>
+                if (hasOtpCode)
                 {
-                    _proccesOnWindow.Enable();
-                    _winkAccessManager.SetCheckCode(code);
-                });
+                    _proccesOnWindow.Disable();
+                    _enterCodeWindow.Enable(onInputDone: (code) =>
+                    {
+                        _proccesOnWindow.Enable();
+                        _winkAccessManager.SendOtpCode(code);
+                    });
+                }
+                else
+                {
+                    _proccesOnWindow.Disable();
+                    _failWindow.Enable();
+                }
             }, 
             winkSubscriptionAccessRequest: (hasAccess) => 
             {
@@ -102,8 +111,10 @@ namespace Agava.Wink
             _successfullyWindow.Enable();
             _signInWindow.Disable();
             _proccesOnWindow.Disable();
-            _openSignInButton.gameObject.SetActive(false);
+            HideSignInButton();
         }
+
+        private void HideSignInButton() => _openSignInButton.gameObject.SetActive(false);
 
         private string GetNumber()
         {
@@ -115,14 +126,15 @@ namespace Agava.Wink
 
             if (isCorrectNumber == false || isCorrectCode == false
                 || string.IsNullOrEmpty(_numbersInputField.text)
-                || (countNumber < _numberCount || countNumber > _numberCount)
+                || (countNumber < _minNumberCount || countNumber > _maxNumberCount)
                 || (countCode > _codeCount || countCode <= 0 || resultCode == 0))
             {
                 _wrongNumberWindow.Enable();
                 return null;
             }
 
-            string number = $"+{resultCode}{resultNumber}";
+            string plus = _additivePlusChar == true ? "+" : "";
+            string number = $"{plus}{resultCode}{resultNumber}";
             return number;
         }
     }

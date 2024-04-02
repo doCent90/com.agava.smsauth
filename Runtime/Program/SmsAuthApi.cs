@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using SmsAuthLibrary.DTO;
+using UnityEngine;
 
 namespace SmsAuthLibrary.Program
 {
@@ -15,6 +16,7 @@ namespace SmsAuthLibrary.Program
                 throw new InvalidOperationException(nameof(SmsAuthApi) + " has already been initialized");
 
             _function = new YandexFunction(functionId ?? throw new ArgumentNullException(nameof(functionId)));
+            Debug.Log("Initialized Ydb");
         }
 
         public static bool Initialized => _function != null;
@@ -33,57 +35,57 @@ namespace SmsAuthLibrary.Program
             return await _function.Post(request);
         }
 
-        public async static Task<Response> Regist(LoginData loginData)
+        public async static Task<Response> Regist(string phoneNumber)
         {
             EnsureInitialize();
 
             var request = new Request()
             {
                 method = "REGISTRATION",
-                body = JsonConvert.SerializeObject(loginData),
+                body = phoneNumber,
                 access_token = "",
             };
 
             return await _function.Post(request);
         }
 
-        public async static Task<Response> Refresh(LoginData loginData)
+        public async static Task<Response> Refresh(string refreshToken)
         {
             EnsureInitialize();
 
             var request = new Request()
             {
                 method = "REFRESH",
-                body = JsonConvert.SerializeObject(loginData),
+                body = refreshToken,
                 access_token = "",
             };
 
             return await _function.Post(request);
         }
 
-        public async static Task<Response> Unlink(LoginData loginData)
+        public async static Task<Response> Unlink(SampleAuthData data)
         {
             EnsureInitialize();
 
             var request = new Request()
             {
                 method = "UNLINK",
-                body = JsonConvert.SerializeObject(loginData),
-                access_token = "",
+                body = JsonConvert.SerializeObject(data),
+                access_token = data.access_token,
             };
 
             return await _function.Post(request);
         }
 
-        public async static Task<Response> SampleAuth(LoginData loginData)
+        public async static Task<Response> SampleAuth(string accessToken)
         {
             EnsureInitialize();
 
             var request = new Request()
             {
                 method = "SAMPLE_AUTH",
-                body = JsonConvert.SerializeObject(loginData),
-                access_token = "",
+                body = "",
+                access_token = accessToken,
             };
 
             return await _function.Post(request);
