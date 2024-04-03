@@ -45,5 +45,7 @@ namespace Agava.Wink
             _onInputDone?.Invoke(resultCode);
             Disable();
         }
+
+        internal void Clear() => _inputField.text = string.Empty;
     }
 }

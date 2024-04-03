@@ -12,7 +12,7 @@ namespace Agava.Wink
         public bool IsLocked { get; private set; } = true;
 
         private void OnDestroy() 
-            => WinkAccessManager.Instance.OnSuccessfully -= OnSuccessfully;
+            => WinkAccessManager.Instance.Successfully -= OnSuccessfully;
 
         private void Awake()
         {
@@ -24,7 +24,7 @@ namespace Agava.Wink
             else
                 SetLock(isLocked: true);
 
-            WinkAccessManager.Instance.OnSuccessfully += OnSuccessfully;
+            WinkAccessManager.Instance.Successfully += OnSuccessfully;
         }
 
         public void SetLock(bool isLocked)

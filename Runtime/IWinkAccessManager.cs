@@ -6,6 +6,6 @@ namespace Agava.Wink
     {
         bool HasAccess { get; }
 
-        event Action OnSuccessfully;
+        event Action Successfully;
     }
 }

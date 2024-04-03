@@ -15,6 +15,7 @@ namespace Agava.Wink
         [SerializeField] private NotifyWindowPresenter _wrongNumberWindow;
         [SerializeField] private NotifyWindowPresenter _proccesOnWindow;
         [SerializeField] private NotifyWindowPresenter _successfullyWindow;
+        [SerializeField] private NotifyWindowPresenter _unlinkWindow;
         [SerializeField] private RedirectWindowPresenter _redirectToWebsiteWindow;
         [SerializeField] private InputWindowPresenter _enterCodeWindow;
         [SerializeField] private List<WindowPresenter> _windows;
@@ -25,17 +26,23 @@ namespace Agava.Wink
         [SerializeField] private Button _signInButton;
         [SerializeField] private Button _openSignInButton;
         [SerializeField] private Button _testSignInButton;
+        [SerializeField] private Button _unlinkButtonTemplate;
         [Header("Phone Number Check Settings")]
         [SerializeField] private int _maxNumberCount = 30;
         [SerializeField] private int _minNumberCount = 5;
         [SerializeField] private int _codeCount = 4;
         [SerializeField] private bool _additivePlusChar = false;
+        [Header("Factory components")]
+        [SerializeField] private Transform _containerButtons;
+
+        private readonly List<Button> _devicesIdButtons = new();
 
         private void OnDestroy()
         {
             _signInButton.onClick.RemoveAllListeners();
-            _winkAccessManager.OnRefreshFail -= OpenSignWindow;
-            _winkAccessManager.OnSuccessfully -= HideSignInButton;
+            _winkAccessManager.ResetLogin -= OpenSignWindow;
+            _winkAccessManager.LimitReached -= OnLimitReached;
+            _winkAccessManager.Successfully -= HideSignInButton;
         }
 
         private void Awake()
@@ -50,8 +57,9 @@ namespace Agava.Wink
             _openSignInButton.onClick.AddListener(OpenSignWindow);
             _windows.ForEach(window => window.Disable());
 
-            _winkAccessManager.OnSuccessfully += HideSignInButton;
-            _winkAccessManager.OnRefreshFail += OpenSignWindow;
+            _winkAccessManager.ResetLogin += OpenSignWindow;
+            _winkAccessManager.LimitReached += OnLimitReached;
+            _winkAccessManager.Successfully += HideSignInButton;
         }
 
 #if UNITY_EDITOR || TEST
@@ -112,6 +120,36 @@ namespace Agava.Wink
             _signInWindow.Disable();
             _proccesOnWindow.Disable();
             HideSignInButton();
+        }
+
+        private void OnLimitReached(IReadOnlyList<string> devicesList)
+        {
+            _windows.ForEach(window => window.Disable());
+            _enterCodeWindow.Clear();
+            _unlinkWindow.Enable();
+
+            foreach (string device in devicesList)
+            {
+                Button button = Instantiate(_unlinkButtonTemplate, _containerButtons);
+                button.GetComponentInChildren<TMP_Text>().text = device;
+                button.onClick.AddListener(()
+                    => OnUnlinkClicked(button.GetComponentInChildren<TMP_Text>().text));
+                _devicesIdButtons.Add(button);
+            }
+        }
+
+        private void OnUnlinkClicked(string device)
+        {
+            foreach (Button button in _devicesIdButtons)
+            {
+                button.onClick.RemoveListener(()
+                    => OnUnlinkClicked(button.GetComponentInChildren<TMP_Text>().text));
+            }
+
+            _devicesIdButtons.Clear();
+            _winkAccessManager.Unlink(device);
+            _unlinkWindow.Disable();
+            _signInWindow.Enable();
         }
 
         private void HideSignInButton() => _openSignInButton.gameObject.SetActive(false);
