@@ -6,6 +6,7 @@ using TMPro;
 
 namespace Agava.Wink
 {
+    [DefaultExecutionOrder(-12)]
     public class WinkSignInHandlerUI : MonoBehaviour
     {
         [SerializeField] private WinkAccessManager _winkAccessManager;

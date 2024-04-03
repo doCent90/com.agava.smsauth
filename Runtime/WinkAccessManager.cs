@@ -9,7 +9,7 @@ using SmsAuthAPI.Program;
 
 namespace Agava.Wink
 {
-    [DefaultExecutionOrder(100)]
+    [DefaultExecutionOrder(-123)]
     public class WinkAccessManager : MonoBehaviour, IWinkAccessManager
     {
         private const string UniqueId = nameof(UniqueId);
@@ -22,6 +22,7 @@ namespace Agava.Wink
         private Action<bool> _winkSubscriptionAccessRequest;
         private string _uniqueId;
 
+        public SaveLoadService SaveLoadService { get; private set; }
         public bool HasAccess { get; private set; } = false;
         public static IWinkAccessManager Instance {  get; private set; }
 
@@ -31,6 +32,7 @@ namespace Agava.Wink
 
         private void Awake()
         {
+            SaveLoadService = new();
             Instance ??= this;            
             DontDestroyOnLoad(this);
         }
