@@ -205,8 +205,9 @@ namespace Agava.Wink
             OnSubscriptionExist(); 
         }
 
-        private void OnSubscriptionExist()
+        private async void OnSubscriptionExist()
         {
+            await SmsAuthAPI.Utility.PlayerPrefs.Load();
             HasAccess = true;
             Successfully?.Invoke();
             Debug.Log("Access succesfully");
