@@ -24,7 +24,7 @@ namespace Agava.Wink
 
         public SaveLoadService SaveLoadService { get; private set; }
         public bool HasAccess { get; private set; } = false;
-        public static IWinkAccessManager Instance {  get; private set; }
+        public static WinkAccessManager Instance {  get; private set; }
 
         public event Action<IReadOnlyList<string>> LimitReached;
         public event Action ResetLogin;
@@ -33,7 +33,10 @@ namespace Agava.Wink
         private void Awake()
         {
             SaveLoadService = new();
-            Instance ??= this;            
+
+            if (Instance == null)
+                Instance = this;
+
             DontDestroyOnLoad(this);
         }
 
@@ -42,18 +45,18 @@ namespace Agava.Wink
             if (SmsAuthApi.Initialized == false)
                 SmsAuthApi.Initialize(_functionId);
 
-            if (PlayerPrefs.HasKey(UniqueId) == false)
+            if (UnityEngine.PlayerPrefs.HasKey(UniqueId) == false)
                 _uniqueId = SystemInfo.deviceName + _additiveId;
             else
-                _uniqueId = PlayerPrefs.GetString(UniqueId);
+                _uniqueId = UnityEngine.PlayerPrefs.GetString(UniqueId);
 
-            if (PlayerPrefs.HasKey(TokenLifeHelper.Tokens))
+            if (UnityEngine.PlayerPrefs.HasKey(TokenLifeHelper.Tokens))
                 QuickAccess();
         }
 
         public async void Regist(string phoneNumber, Action<bool> otpCodeRequest, Action<bool> winkSubscriptionAccessRequest)
         {
-            PlayerPrefs.SetString(PhoneNumber, phoneNumber);
+            UnityEngine.PlayerPrefs.SetString(PhoneNumber, phoneNumber);
 
             _winkSubscriptionAccessRequest = winkSubscriptionAccessRequest;
             _data = new()
