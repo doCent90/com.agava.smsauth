@@ -1,6 +1,6 @@
 {
   "name": "com.agava.smsauth",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "displayName": "Sms Auth",
   "type": "library",
   "unity": "2022.3",
@@ -13,7 +13,7 @@
   },
   "samples": [
     {
-      "displayName": "Prefab",
+      "displayName": "Resource",
       "description": "Contains UI prefab the SDK.",
       "path": "Samples~/Resource"
     }
