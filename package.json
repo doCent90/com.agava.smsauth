@@ -1,13 +1,13 @@
 {
   "name": "com.agava.smsauth",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "displayName": "Sms Auth",
   "type": "library",
   "unity": "2022.3",
   "description": "Sms Authenfication for Wink access.",
   "license": "MIT",
   "dependencies": {
-    "com.agava.smsauthapi": "1.0.3",
+    "com.agava.smsauthapi": "1.0.4",
     "com.unity.nuget.newtonsoft-json": "3.0.2",
     "com.unity.textmeshpro": "3.0.6"
   },

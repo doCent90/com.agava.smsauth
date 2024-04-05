@@ -4,6 +4,8 @@ namespace Agava.Wink
 {
     public abstract class WindowPresenter : MonoBehaviour
     {
+        public bool HasOpened { get; private set; } = false;
+
         public abstract void Enable();
         public abstract void Disable();
 
@@ -12,6 +14,7 @@ namespace Agava.Wink
             canvas.alpha = 1;
             canvas.interactable = true;
             canvas.blocksRaycasts = true;
+            HasOpened = true;
         }
 
         protected void DisableCanvasGroup(CanvasGroup canvas)
@@ -19,6 +22,7 @@ namespace Agava.Wink
             canvas.alpha = 0;
             canvas.interactable = false;
             canvas.blocksRaycasts = false;
+            HasOpened = false;
         }
     }
 }

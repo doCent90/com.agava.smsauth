@@ -2,14 +2,17 @@
 using System.Globalization;
 using UnityEngine;
 using UnityEngine.UI;
+using SmsAuthAPI.Program;
 using TMPro;
+using System;
 
 namespace Agava.Wink
 {
     [DefaultExecutionOrder(-12)]
-    public class WinkSignInHandlerUI : MonoBehaviour
+    public class WinkSignInHandlerUI : MonoBehaviour, ICoroutine
     {
         [SerializeField] private WinkAccessManager _winkAccessManager;
+        [SerializeField] private DemoTimer _demoTimer;
         [Header("UI Windows")]
         [SerializeField] private NotifyWindowPresenter _signInWindow;
         [SerializeField] private NotifyWindowPresenter _failWindow;
@@ -17,6 +20,7 @@ namespace Agava.Wink
         [SerializeField] private NotifyWindowPresenter _proccesOnWindow;
         [SerializeField] private NotifyWindowPresenter _successfullyWindow;
         [SerializeField] private NotifyWindowPresenter _unlinkWindow;
+        [SerializeField] private NotifyWindowPresenter _demoTimerExpiredWindow;
         [SerializeField] private RedirectWindowPresenter _redirectToWebsiteWindow;
         [SerializeField] private InputWindowPresenter _enterCodeWindow;
         [SerializeField] private List<WindowPresenter> _windows;
@@ -43,7 +47,8 @@ namespace Agava.Wink
             _signInButton.onClick.RemoveAllListeners();
             _winkAccessManager.ResetLogin -= OpenSignWindow;
             _winkAccessManager.LimitReached -= OnLimitReached;
-            _winkAccessManager.Successfully -= HideSignInButton;
+            _winkAccessManager.Successfully -= OnSuccessfully;
+            _demoTimer.Dispose();
         }
 
         private void Awake()
@@ -56,12 +61,21 @@ namespace Agava.Wink
             _testSignInButton.gameObject.SetActive(false);
 #endif
             _openSignInButton.onClick.AddListener(OpenSignWindow);
-            _windows.ForEach(window => window.Disable());
+            CloseAllWindows();
 
             _winkAccessManager.ResetLogin += OpenSignWindow;
             _winkAccessManager.LimitReached += OnLimitReached;
-            _winkAccessManager.Successfully += HideSignInButton;
+            _winkAccessManager.Successfully += OnSuccessfully;
+            _demoTimer.TimerExpired += OnTimerExpired;
+
+            //var response = await SmsAuthApi.GetDemoTimer();
+            //int seconds = Convert.ToInt32(response.body);
+
+            _demoTimer.Construct(_winkAccessManager, seconds: 10, this);
+            _demoTimer.Start();
         }
+
+        private void CloseAllWindows() => _windows.ForEach(window => window.Disable());
 
 #if UNITY_EDITOR || TEST
         private void OnTestSignInClicked()
@@ -120,12 +134,12 @@ namespace Agava.Wink
             _successfullyWindow.Enable();
             _signInWindow.Disable();
             _proccesOnWindow.Disable();
-            HideSignInButton();
+            OnSuccessfully();
         }
 
         private void OnLimitReached(IReadOnlyList<string> devicesList)
         {
-            _windows.ForEach(window => window.Disable());
+            CloseAllWindows();
             _enterCodeWindow.Clear();
             _unlinkWindow.Enable();
 
@@ -153,7 +167,14 @@ namespace Agava.Wink
             _signInWindow.Enable();
         }
 
-        private void HideSignInButton() => _openSignInButton.gameObject.SetActive(false);
+        private void OnSuccessfully()
+        {
+            _openSignInButton.gameObject.SetActive(false);
+            _demoTimer.Stop();
+            _demoTimerExpiredWindow.Disable();
+        }
+
+        private void OnTimerExpired() => _demoTimerExpiredWindow.Enable();
 
         private string GetNumber()
         {
