@@ -98,7 +98,12 @@ namespace Agava.Wink
             Login(_data);
         }
 
-        internal void TestEnableSubsription() => OnSubscriptionExist();
+        internal void TestEnableSubsription()
+        {
+            HasAccess = true;
+            Successfully?.Invoke();
+            Debug.Log("Test Access succesfully. No cloud saves");
+        }
 
         private async void Login(LoginData data)
         {

@@ -4670,7 +4670,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _winkAccessManager: {fileID: 3558283120338427668}
   _demoTimer:
-    _defaultTimerSeconds: 60
+    _defaultTimerSeconds: 1800
   _signInWindow: {fileID: 1367689781058899639}
   _failWindow: {fileID: 4157864668006057402}
   _wrongNumberWindow: {fileID: 7139242894815358875}

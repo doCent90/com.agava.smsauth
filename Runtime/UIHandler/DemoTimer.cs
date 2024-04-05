@@ -46,13 +46,16 @@ namespace Agava.Wink
 
         public void Start()
         {
-            _coroutine.StartCoroutine(Ticking());
+            _current = _coroutine.StartCoroutine(Ticking());
             IEnumerator Ticking()
             {
                 var tick = new WaitForSecondsRealtime(1);
                 var waitBeforeStart = new WaitForSecondsRealtime(10);
 
                 yield return waitBeforeStart;
+
+                if (WinkAccessManager.Instance.HasAccess)
+                    Stop();
 
                 while (_seconds > 0)
                 {
@@ -62,7 +65,7 @@ namespace Agava.Wink
                     yield return tick;
                 }
 
-                if(_seconds <= 0)
+                if(_seconds <= 0 && WinkAccessManager.Instance.HasAccess == false)
                     TimerExpired?.Invoke();
             }
         }

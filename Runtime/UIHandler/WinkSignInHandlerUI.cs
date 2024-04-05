@@ -5,12 +5,15 @@ using UnityEngine.UI;
 using SmsAuthAPI.Program;
 using TMPro;
 using System;
+using SmsAuthAPI.DTO;
+using System.Threading.Tasks;
 
 namespace Agava.Wink
 {
     [DefaultExecutionOrder(-12)]
     public class WinkSignInHandlerUI : MonoBehaviour, ICoroutine
     {
+        private const int MinutesFactor = 60;
         [SerializeField] private WinkAccessManager _winkAccessManager;
         [SerializeField] private DemoTimer _demoTimer;
         [Header("UI Windows")]
@@ -51,7 +54,7 @@ namespace Agava.Wink
             _demoTimer.Dispose();
         }
 
-        private void Awake()
+        private async void Awake()
         {
             _signInButton.onClick.AddListener(OnSignInClicked);
 #if UNITY_EDITOR || TEST
@@ -68,11 +71,32 @@ namespace Agava.Wink
             _winkAccessManager.Successfully += OnSuccessfully;
             _demoTimer.TimerExpired += OnTimerExpired;
 
-            //var response = await SmsAuthApi.GetDemoTimer();
-            //int seconds = Convert.ToInt32(response.body);
+            await SetRemoteConfig();
+        }
 
-            _demoTimer.Construct(_winkAccessManager, seconds: 10, this);
-            _demoTimer.Start();
+        private async Task SetRemoteConfig()
+        {
+            await Task.Yield();
+
+            var response = await SmsAuthApi.GetRemoteConfig("max-demo-minutes");
+
+            if (response.statusCode == (uint)YbdStatusCode.Success)
+            {
+                int seconds;
+
+                if (string.IsNullOrEmpty(response.body))
+                    seconds = 0;
+                else
+                    seconds = Convert.ToInt32(response.body) * MinutesFactor;
+
+                _demoTimer.Construct(_winkAccessManager, seconds, this);
+                _demoTimer.Start();
+                Debug.Log("Remote setted: " + response.body);
+            }
+            else
+            {
+                Debug.LogError("Fail to recieve remote config: " + response.statusCode);
+            }
         }
 
         private void CloseAllWindows() => _windows.ForEach(window => window.Disable());
