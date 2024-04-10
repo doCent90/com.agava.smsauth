@@ -10,8 +10,8 @@ namespace Agava.Wink
         private const string TimerKey = nameof(TimerKey);
         private const float Delay = 5f;
 
+        [Min(0)]
         [SerializeField] private int _defaultTimerSeconds = 1800;
-        [SerializeField] private bool _test = false;
 
         private WinkAccessManager _winkAccessManager;
         private ICoroutine _coroutine;
@@ -21,28 +21,18 @@ namespace Agava.Wink
 
         public event Action TimerExpired;
 
-        public void Construct(WinkAccessManager winkAccessManager, int seconds, ICoroutine coroutine)
+        public void Construct(WinkAccessManager winkAccessManager, int remoteCfgSeconds, ICoroutine coroutine)
         {
             _winkAccessManager = winkAccessManager;
             _coroutine = coroutine;
 
-            if (seconds <= 0 && _test == false)
-                seconds = _defaultTimerSeconds;
+            if (remoteCfgSeconds <= 0)
+                remoteCfgSeconds = _defaultTimerSeconds;
 
-            if (UnityEngine.PlayerPrefs.HasKey(TimerKey) == false)
-            {
-                if (_test)
-                    _seconds = _defaultTimerSeconds;
-                else
-                    _seconds = seconds;
-            }
-            else
-            {
+            if (UnityEngine.PlayerPrefs.HasKey(TimerKey))
                 _seconds = UnityEngine.PlayerPrefs.GetInt(TimerKey);
-            }
-
-            if (_seconds <= 0)
-                _seconds = seconds;
+            else
+                _seconds = remoteCfgSeconds;
 
             _winkAccessManager.Successfully += Stop;
         }
