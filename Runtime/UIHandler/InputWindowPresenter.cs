@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace Agava.Wink
 {
-    public class InputWindowPresenter : WindowPresenter
+    internal class InputWindowPresenter : WindowPresenter
     {
         [SerializeField] private NotifyWindowPresenter _failWindow;
         [SerializeField] private CanvasGroup _canvasGroup;

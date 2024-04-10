@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace Agava.Wink
 {
-    public class NotifyWindowPresenter : WindowPresenter
+    internal class NotifyWindowPresenter : WindowPresenter
     {
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private Button _closeButton;

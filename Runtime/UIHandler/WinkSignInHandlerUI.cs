@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 using UnityEngine.UI;
 using SmsAuthAPI.Program;
@@ -7,11 +6,12 @@ using TMPro;
 using System;
 using SmsAuthAPI.DTO;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace Agava.Wink
 {
     [DefaultExecutionOrder(-12)]
-    public class WinkSignInHandlerUI : MonoBehaviour, ICoroutine
+    internal class WinkSignInHandlerUI : MonoBehaviour, IWinkSignInHandlerUI, ICoroutine
     {
         private const int MinutesFactor = 60;
         [SerializeField] private WinkAccessManager _winkAccessManager;
@@ -45,6 +45,9 @@ namespace Agava.Wink
 
         private readonly List<Button> _devicesIdButtons = new();
 
+        public bool IsAnyWindowEnabled => _windows.Any(window => window.HasOpened);
+        public event Action WindowsClosed;
+
         private void OnDestroy()
         {
             _signInButton.onClick.RemoveAllListeners();
@@ -74,6 +77,17 @@ namespace Agava.Wink
             await SetRemoteConfig();
         }
 
+        public void OpenSignWindow() => _signInWindow.Enable();
+
+        public void OpenWindow(WindowPresenter window) => window.Enable();
+        public void CloseWindow(WindowPresenter window) => window.Disable();
+
+        public void CloseAllWindows()
+        {
+            _windows.ForEach(window => window.Disable());
+            WindowsClosed?.Invoke();
+        }
+
         private async Task SetRemoteConfig()
         {
             await Task.Yield();
@@ -89,7 +103,7 @@ namespace Agava.Wink
                 else
                     seconds = Convert.ToInt32(response.body) * MinutesFactor;
 
-                _demoTimer.Construct(_winkAccessManager, seconds, this);
+                _demoTimer.Construct(_winkAccessManager, seconds, this, this);
                 _demoTimer.Start();
                 Debug.Log("Remote setted: " + response.body);
             }
@@ -99,8 +113,6 @@ namespace Agava.Wink
             }
         }
 
-        private void CloseAllWindows() => _windows.ForEach(window => window.Disable());
-
 #if UNITY_EDITOR || TEST
         private void OnTestSignInClicked()
         {
@@ -109,19 +121,21 @@ namespace Agava.Wink
         }
 #endif
 
-        private void OpenSignWindow() => _signInWindow.Enable();
-
         private void OnSignInClicked()
         {
-            var number = GetNumber();
+            string number = WinkAcceessHelper.GetNumber(_codeInputField.text, _numbersInputField.text,
+                _minNumberCount, _maxNumberCount, _codeCount, _additivePlusChar);
 
             if (string.IsNullOrEmpty(number))
+            {
+                _wrongNumberWindow.Enable();
                 return;
+            }
 
             _proccesOnWindow.Enable();
 
             _winkAccessManager.Regist(phoneNumber: number,
-            otpCodeRequest: (hasOtpCode) => 
+            otpCodeRequest: (hasOtpCode) =>
             {
                 if (hasOtpCode)
                 {
@@ -137,8 +151,8 @@ namespace Agava.Wink
                     _proccesOnWindow.Disable();
                     _failWindow.Enable();
                 }
-            }, 
-            winkSubscriptionAccessRequest: (hasAccess) => 
+            },
+            winkSubscriptionAccessRequest: (hasAccess) =>
             {
                 if (hasAccess)
                 {
@@ -199,27 +213,5 @@ namespace Agava.Wink
         }
 
         private void OnTimerExpired() => _demoTimerExpiredWindow.Enable();
-
-        private string GetNumber()
-        {
-            bool isCorrectCode = uint.TryParse(_codeInputField.text, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out uint resultCode);
-            bool isCorrectNumber = ulong.TryParse(_numbersInputField.text, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out ulong resultNumber);
-
-            int countCode = resultCode.ToString().Length;
-            int countNumber = resultNumber.ToString().Length;
-
-            if (isCorrectNumber == false || isCorrectCode == false
-                || string.IsNullOrEmpty(_numbersInputField.text)
-                || (countNumber < _minNumberCount || countNumber > _maxNumberCount)
-                || (countCode > _codeCount || countCode <= 0 || resultCode == 0))
-            {
-                _wrongNumberWindow.Enable();
-                return null;
-            }
-
-            string plus = _additivePlusChar == true ? "+" : "";
-            string number = $"{plus}{resultCode}{resultNumber}";
-            return number;
-        }
     }
 }

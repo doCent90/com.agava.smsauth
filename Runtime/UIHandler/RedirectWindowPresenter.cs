@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace Agava.Wink
 {
-    public class RedirectWindowPresenter : WindowPresenter
+    internal class RedirectWindowPresenter : WindowPresenter
     {
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private Button _yesButton;

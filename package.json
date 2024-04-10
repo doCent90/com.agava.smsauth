@@ -1,6 +1,6 @@
 {
   "name": "com.agava.smsauth",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "displayName": "Sms Auth",
   "type": "library",
   "unity": "2022.3",

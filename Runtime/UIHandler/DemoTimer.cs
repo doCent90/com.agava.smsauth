@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Agava.Wink
 {
     [Serializable]
-    public class DemoTimer
+    internal class DemoTimer
     {
         private const string TimerKey = nameof(TimerKey);
         private const float Delay = 5f;
@@ -14,6 +14,7 @@ namespace Agava.Wink
         [SerializeField] private int _defaultTimerSeconds = 1800;
 
         private WinkAccessManager _winkAccessManager;
+        private IWinkSignInHandlerUI _winkSignInHandlerUI;
         private ICoroutine _coroutine;
 
         private Coroutine _current;
@@ -21,8 +22,9 @@ namespace Agava.Wink
 
         public event Action TimerExpired;
 
-        public void Construct(WinkAccessManager winkAccessManager, int remoteCfgSeconds, ICoroutine coroutine)
+        public void Construct(WinkAccessManager winkAccessManager, int remoteCfgSeconds, IWinkSignInHandlerUI winkSignInHandlerUI, ICoroutine coroutine)
         {
+            _winkSignInHandlerUI = winkSignInHandlerUI;
             _winkAccessManager = winkAccessManager;
             _coroutine = coroutine;
 
@@ -58,8 +60,11 @@ namespace Agava.Wink
 
                 while (_seconds > 0)
                 {
-                    _seconds--;
-                    UnityEngine.PlayerPrefs.SetInt(TimerKey, _seconds);
+                    if (_winkSignInHandlerUI.IsAnyWindowEnabled == false)
+                    {
+                        _seconds--;
+                        UnityEngine.PlayerPrefs.SetInt(TimerKey, _seconds);
+                    }
 
                     yield return tick;
                 }
