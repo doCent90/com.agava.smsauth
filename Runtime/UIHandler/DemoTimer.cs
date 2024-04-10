@@ -7,9 +7,11 @@ namespace Agava.Wink
     [Serializable]
     public class DemoTimer
     {
-        [SerializeField] private int _defaultTimerSeconds = 1800;
-
         private const string TimerKey = nameof(TimerKey);
+        private const float Delay = 5f;
+
+        [SerializeField] private int _defaultTimerSeconds = 1800;
+        [SerializeField] private bool _test = false;
 
         private WinkAccessManager _winkAccessManager;
         private ICoroutine _coroutine;
@@ -24,13 +26,20 @@ namespace Agava.Wink
             _winkAccessManager = winkAccessManager;
             _coroutine = coroutine;
 
-            if (seconds <= 0)
+            if (seconds <= 0 && _test == false)
                 seconds = _defaultTimerSeconds;
 
             if (UnityEngine.PlayerPrefs.HasKey(TimerKey) == false)
-                _seconds = seconds;
+            {
+                if (_test)
+                    _seconds = _defaultTimerSeconds;
+                else
+                    _seconds = seconds;
+            }
             else
+            {
                 _seconds = UnityEngine.PlayerPrefs.GetInt(TimerKey);
+            }
 
             if (_seconds <= 0)
                 _seconds = seconds;
@@ -50,7 +59,7 @@ namespace Agava.Wink
             IEnumerator Ticking()
             {
                 var tick = new WaitForSecondsRealtime(1);
-                var waitBeforeStart = new WaitForSecondsRealtime(10);
+                var waitBeforeStart = new WaitForSecondsRealtime(Delay);
 
                 yield return waitBeforeStart;
 
