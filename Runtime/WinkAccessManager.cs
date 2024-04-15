@@ -46,7 +46,7 @@ namespace Agava.Wink
                 SmsAuthApi.Initialize(_functionId);
 
             if (UnityEngine.PlayerPrefs.HasKey(UniqueId) == false)
-                _uniqueId = SystemInfo.deviceName + _additiveId;
+                _uniqueId = SystemInfo.deviceName + Application.identifier + _additiveId;
             else
                 _uniqueId = UnityEngine.PlayerPrefs.GetString(UniqueId);
 
