@@ -22,7 +22,6 @@ namespace Agava.Wink
         private Action<bool> _winkSubscriptionAccessRequest;
         private string _uniqueId;
 
-        public SaveLoadService SaveLoadService { get; private set; }
         public bool HasAccess { get; private set; } = false;
         public static WinkAccessManager Instance {  get; private set; }
 
@@ -32,8 +31,6 @@ namespace Agava.Wink
 
         private void Awake()
         {
-            SaveLoadService = new();
-
             if (Instance == null)
                 Instance = this;
 
