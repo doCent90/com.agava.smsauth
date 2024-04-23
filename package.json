@@ -7,7 +7,7 @@
   "description": "Sms Authenfication for Wink access.",
   "license": "MIT",
   "dependencies": {
-    "com.agava.smsauthapi": "1.0.4",
+    "com.agava.smsauthapi": "1.0.8",
     "com.unity.nuget.newtonsoft-json": "3.0.2",
     "com.unity.textmeshpro": "3.0.6"
   },
