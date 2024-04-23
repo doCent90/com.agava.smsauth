@@ -16,6 +16,7 @@ namespace Agava.Wink
         [SerializeField] private Image _enLogo;
         [SerializeField] private Image _ruLogo;
         [SerializeField] private Image _loading;
+        [SerializeField] private bool _enable = true;
 
         private void Update()
         {
@@ -34,6 +35,8 @@ namespace Agava.Wink
         /// </summary>
         internal void ShowLogo()
         {
+            if (_enable == false) return;
+
             if (Application.systemLanguage == SystemLanguage.Russian)
                 _ruLogo.gameObject.SetActive(true);
             else
@@ -45,7 +48,7 @@ namespace Agava.Wink
         /// </summary>
         internal IEnumerator HidingLogo()
         {
-            while (_logoGroup.alpha > 0.1)
+            while (_logoGroup.alpha > 0.1 && _enable)
             {
                 _logoGroup.alpha -= 0.1f;
                 yield return new WaitForFixedUpdate();
