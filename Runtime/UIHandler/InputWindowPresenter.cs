@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Globalization;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace Agava.Wink
 {

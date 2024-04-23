@@ -2,8 +2,14 @@
 
 namespace Agava.Wink
 {
+    /// <summary>
+    ///     Access extention.
+    /// </summary>
     public static class WinkAcceessHelper
     {
+        /// <summary>
+        ///     Return formated number after enter.
+        /// </summary>
         public static string GetNumber(string otp_code, string phone_number, int minNumberCount, int maxNumberCount, int codeCount, bool additivePlusChar)
         {
             bool isCorrectCode = uint.TryParse(otp_code, System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out uint resultCode);

@@ -6,11 +6,12 @@ namespace Agava.Wink
     {
         bool IsAnyWindowEnabled { get; }
 
-        event Action WindowsClosed;
+        event Action AllWindowsClosed;
+        event Action SignInWindowClosed;
 
         void OpenSignWindow();
-        void OpenWindow(WindowPresenter window);
-        void CloseWindow(WindowPresenter window);
+        void OpenWindow(WindowType type);
+        void CloseWindow(WindowType type);
         void CloseAllWindows();
     }
 }

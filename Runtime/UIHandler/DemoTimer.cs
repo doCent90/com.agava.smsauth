@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Collections;
 using UnityEngine;
+using SmsAuthAPI.Program;
 
 namespace Agava.Wink
 {
+    /// <summary>
+    ///     Demo timer Handler. Block app after expired allowed time.
+    /// </summary>
     [Serializable]
     internal class DemoTimer
     {
@@ -13,7 +17,7 @@ namespace Agava.Wink
         [Min(0)]
         [SerializeField] private int _defaultTimerSeconds = 1800;
 
-        private WinkAccessManager _winkAccessManager;
+        private IWinkAccessManager _winkAccessManager;
         private IWinkSignInHandlerUI _winkSignInHandlerUI;
         private ICoroutine _coroutine;
 
@@ -22,7 +26,7 @@ namespace Agava.Wink
 
         public event Action TimerExpired;
 
-        public void Construct(WinkAccessManager winkAccessManager, int remoteCfgSeconds, IWinkSignInHandlerUI winkSignInHandlerUI, ICoroutine coroutine)
+        internal void Construct(IWinkAccessManager winkAccessManager, int remoteCfgSeconds, IWinkSignInHandlerUI winkSignInHandlerUI, ICoroutine coroutine)
         {
             _winkSignInHandlerUI = winkSignInHandlerUI;
             _winkAccessManager = winkAccessManager;
@@ -39,20 +43,22 @@ namespace Agava.Wink
             _winkAccessManager.Successfully += Stop;
         }
 
-        public void Dispose()
+        internal void Dispose()
         {
             _winkAccessManager.Successfully -= Stop;
             UnityEngine.PlayerPrefs.SetInt(TimerKey, _seconds);
         }
 
-        public void Start()
+        internal void Start()
         {
             _current = _coroutine.StartCoroutine(Ticking());
             IEnumerator Ticking()
             {
                 var tick = new WaitForSecondsRealtime(1);
                 var waitBeforeStart = new WaitForSecondsRealtime(Delay);
+                var waitInitialize = new WaitWhile(() => SmsAuthApi.Initialized == false);
 
+                yield return waitInitialize;
                 yield return waitBeforeStart;
 
                 if (WinkAccessManager.Instance.HasAccess)
@@ -74,7 +80,7 @@ namespace Agava.Wink
             }
         }
 
-        public void Stop()
+        internal void Stop()
         {
             if (_current != null)
             {

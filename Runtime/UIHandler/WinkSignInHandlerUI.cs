@@ -1,40 +1,35 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using SmsAuthAPI.Program;
-using TMPro;
-using System;
 using SmsAuthAPI.DTO;
-using System.Threading.Tasks;
-using System.Linq;
+using TMPro;
 
 namespace Agava.Wink
 {
-    [DefaultExecutionOrder(-12)]
-    internal class WinkSignInHandlerUI : MonoBehaviour, IWinkSignInHandlerUI, ICoroutine
+    /// <summary>
+    ///     Handler UI. Input data and view auth process.
+    /// </summary>
+    public class WinkSignInHandlerUI : MonoBehaviour, IWinkSignInHandlerUI, ICoroutine
     {
         private const int MinutesFactor = 60;
-        [SerializeField] private WinkAccessManager _winkAccessManager;
+        private const string RemoteName = "max-demo-minutes";
+
         [SerializeField] private DemoTimer _demoTimer;
-        [Header("UI Windows")]
-        [SerializeField] private NotifyWindowPresenter _signInWindow;
-        [SerializeField] private NotifyWindowPresenter _failWindow;
-        [SerializeField] private NotifyWindowPresenter _wrongNumberWindow;
-        [SerializeField] private NotifyWindowPresenter _proccesOnWindow;
-        [SerializeField] private NotifyWindowPresenter _successfullyWindow;
-        [SerializeField] private NotifyWindowPresenter _unlinkWindow;
-        [SerializeField] private NotifyWindowPresenter _demoTimerExpiredWindow;
-        [SerializeField] private RedirectWindowPresenter _redirectToWebsiteWindow;
-        [SerializeField] private InputWindowPresenter _enterCodeWindow;
-        [SerializeField] private List<WindowPresenter> _windows;
+        [SerializeField] private NotifyWindowHandler _notifyWindowHandler;
         [Header("UI Input")]
         [SerializeField] private TMP_InputField _codeInputField;
         [SerializeField] private TMP_InputField _numbersInputField;
         [Header("UI Buttons")]
         [SerializeField] private Button _signInButton;
         [SerializeField] private Button _openSignInButton;
-        [SerializeField] private Button _testSignInButton;
         [SerializeField] private Button _unlinkButtonTemplate;
+        [Header("UI Test Buttons")]
+        [SerializeField] private Button _testSignInButton;
+        [SerializeField] private Button _testDeleteButton;
         [Header("Phone Number Check Settings")]
         [SerializeField] private int _maxNumberCount = 30;
         [SerializeField] private int _minNumberCount = 5;
@@ -43,29 +38,43 @@ namespace Agava.Wink
         [Header("Factory components")]
         [SerializeField] private Transform _containerButtons;
 
+        private WinkAccessManager _winkAccessManager;
         private readonly List<Button> _devicesIdButtons = new();
 
-        public bool IsAnyWindowEnabled => _windows.Any(window => window.HasOpened);
-        public event Action WindowsClosed;
+        public static WinkSignInHandlerUI Instance { get; private set; }
 
-        private void OnDestroy()
+        public bool IsAnyWindowEnabled => _notifyWindowHandler.IsAnyWindowEnabled;
+        public event Action AllWindowsClosed;
+        public event Action SignInWindowClosed;
+
+        public void Dispose()
         {
             _signInButton.onClick.RemoveAllListeners();
+
+            if (_winkAccessManager == null) return;
+
             _winkAccessManager.ResetLogin -= OpenSignWindow;
             _winkAccessManager.LimitReached -= OnLimitReached;
             _winkAccessManager.Successfully -= OnSuccessfully;
             _demoTimer.Dispose();
         }
 
-        private async void Awake()
+        public IEnumerator Construct(WinkAccessManager winkAccessManager)
         {
-            _signInButton.onClick.AddListener(OnSignInClicked);
+            if (Instance == null)
+                Instance = this;
+
 #if UNITY_EDITOR || TEST
             _testSignInButton.onClick.AddListener(OnTestSignInClicked);
+            _testDeleteButton.onClick.AddListener(OnTestDeleteClicked);
             _testSignInButton.gameObject.SetActive(true);
+            _testDeleteButton.gameObject.SetActive(true);
 #else
+            _testDeleteButton.gameObject.SetActive(false);
             _testSignInButton.gameObject.SetActive(false);
 #endif
+            _winkAccessManager = winkAccessManager;
+            _signInButton.onClick.AddListener(OnSignInClicked);
             _openSignInButton.onClick.AddListener(OpenSignWindow);
             CloseAllWindows();
 
@@ -74,25 +83,34 @@ namespace Agava.Wink
             _winkAccessManager.Successfully += OnSuccessfully;
             _demoTimer.TimerExpired += OnTimerExpired;
 
-            await SetRemoteConfig();
+            if (Application.internetReachability == NetworkReachability.NotReachable)
+            {
+                _notifyWindowHandler.OpenWindow(WindowType.NoEnternet);
+                yield return new WaitWhile(() => Application.internetReachability == NetworkReachability.NotReachable);
+            }
+            else
+            {
+                _notifyWindowHandler.CloseWindow(WindowType.NoEnternet);
+            }
+
+            SetRemoteConfig();
         }
 
-        public void OpenSignWindow() => _signInWindow.Enable();
-
-        public void OpenWindow(WindowPresenter window) => window.Enable();
-        public void CloseWindow(WindowPresenter window) => window.Disable();
+        public void OpenSignWindow() => _notifyWindowHandler.OpenSignInWindow(() => SignInWindowClosed?.Invoke());
+        public void OpenWindow(WindowType type) => _notifyWindowHandler.OpenWindow(type);
+        public void CloseWindow(WindowType type) => _notifyWindowHandler.CloseWindow(type);
 
         public void CloseAllWindows()
         {
-            _windows.ForEach(window => window.Disable());
-            WindowsClosed?.Invoke();
+            _notifyWindowHandler.CloseAllWindows();
+            AllWindowsClosed?.Invoke();
         }
 
-        private async Task SetRemoteConfig()
+        private async void SetRemoteConfig()
         {
             await Task.Yield();
 
-            var response = await SmsAuthApi.GetRemoteConfig("max-demo-minutes");
+            var response = await SmsAuthApi.GetRemoteConfig(RemoteName);
 
             if (response.statusCode == (uint)YbdStatusCode.Success)
             {
@@ -119,6 +137,15 @@ namespace Agava.Wink
             _winkAccessManager.TestEnableSubsription();
             _testSignInButton.gameObject.SetActive(false);
         }
+
+        private async void OnTestDeleteClicked()
+        {
+            if (WinkAccessManager.Instance.HasAccess == false)
+                throw new System.Exception("Wink not authorizated!");
+
+            await SmsAuthAPI.Utility.PlayerPrefs.Load();
+            SmsAuthAPI.Utility.PlayerPrefs.DeleteAll();
+        }
 #endif
 
         private void OnSignInClicked()
@@ -128,28 +155,29 @@ namespace Agava.Wink
 
             if (string.IsNullOrEmpty(number))
             {
-                _wrongNumberWindow.Enable();
+                _notifyWindowHandler.OpenWindow(WindowType.WrongNumber);
                 return;
             }
 
-            _proccesOnWindow.Enable();
+            _notifyWindowHandler.OpenWindow(WindowType.ProccessOn);
 
             _winkAccessManager.Regist(phoneNumber: number,
             otpCodeRequest: (hasOtpCode) =>
             {
                 if (hasOtpCode)
                 {
-                    _proccesOnWindow.Disable();
-                    _enterCodeWindow.Enable(onInputDone: (code) =>
+                    _notifyWindowHandler.CloseWindow(WindowType.ProccessOn);
+
+                    _notifyWindowHandler.OpenInputWindow(onInputDone: (code) =>
                     {
-                        _proccesOnWindow.Enable();
+                        _notifyWindowHandler.OpenWindow(WindowType.ProccessOn);
                         _winkAccessManager.SendOtpCode(code);
                     });
                 }
                 else
                 {
-                    _proccesOnWindow.Disable();
-                    _failWindow.Enable();
+                    _notifyWindowHandler.CloseWindow(WindowType.ProccessOn);
+                    _notifyWindowHandler.OpenWindow(WindowType.Fail);
                 }
             },
             winkSubscriptionAccessRequest: (hasAccess) =>
@@ -160,26 +188,25 @@ namespace Agava.Wink
                 }
                 else
                 {
-                    _failWindow.Enable();
-                    _proccesOnWindow.Disable();
-                    _redirectToWebsiteWindow.Enable();
+                    _notifyWindowHandler.OpenWindow(WindowType.Fail);
+                    _notifyWindowHandler.CloseWindow(WindowType.ProccessOn);
+                    _notifyWindowHandler.OpenWindow(WindowType.Redirect);
                 }
             });
         }
 
         private void OnSignInDone()
         {
-            _successfullyWindow.Enable();
-            _signInWindow.Disable();
-            _proccesOnWindow.Disable();
+            _notifyWindowHandler.OpenWindow(WindowType.Successfully);
+            _notifyWindowHandler.CloseWindow(WindowType.SignIn);
+            _notifyWindowHandler.CloseWindow(WindowType.ProccessOn);
             OnSuccessfully();
         }
 
         private void OnLimitReached(IReadOnlyList<string> devicesList)
         {
             CloseAllWindows();
-            _enterCodeWindow.Clear();
-            _unlinkWindow.Enable();
+            _notifyWindowHandler.OnLimitReached();
 
             foreach (string device in devicesList)
             {
@@ -201,17 +228,17 @@ namespace Agava.Wink
 
             _devicesIdButtons.Clear();
             _winkAccessManager.Unlink(device);
-            _unlinkWindow.Disable();
-            _signInWindow.Enable();
+            _notifyWindowHandler.CloseWindow(WindowType.Unlink);
+            _notifyWindowHandler.OpenSignInWindow();
         }
 
         private void OnSuccessfully()
         {
             _openSignInButton.gameObject.SetActive(false);
             _demoTimer.Stop();
-            _demoTimerExpiredWindow.Disable();
+            _notifyWindowHandler.CloseWindow(WindowType.DemoTimerExpired);
         }
 
-        private void OnTimerExpired() => _demoTimerExpiredWindow.Enable();
+        private void OnTimerExpired() => _notifyWindowHandler.OpenWindow(WindowType.DemoTimerExpired);
     }
 }
