@@ -22,7 +22,7 @@ namespace Agava.Wink
 
         private Coroutine _signInProcess;
 
-        public Boot Instance { get; private set; }
+        public static Boot Instance { get; private set; }
 
         public event Action Restarted;
 
