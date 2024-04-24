@@ -145,6 +145,7 @@ namespace Agava.Wink
 
             await SmsAuthAPI.Utility.PlayerPrefs.Load();
             SmsAuthAPI.Utility.PlayerPrefs.DeleteAll();
+            SmsAuthAPI.Utility.PlayerPrefs.Save();
         }
 #endif
 
