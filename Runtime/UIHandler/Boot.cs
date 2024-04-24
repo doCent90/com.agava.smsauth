@@ -9,7 +9,7 @@ namespace Agava.Wink
     ///     Starting auth services and cloud saves.
     /// </summary>
     [DefaultExecutionOrder(-123)]
-    internal class Boot : MonoBehaviour
+    internal class Boot : MonoBehaviour, IBoot
     {
         private const string FirsttimeStartApp = nameof(FirsttimeStartApp);
         private const float TimeOutTime = 60f;
@@ -20,6 +20,8 @@ namespace Agava.Wink
         [SerializeField] private SceneLoader _sceneLoader;
 
         private Coroutine _signInProcess;
+
+        public event Action Restarted;
 
         private void OnDestroy() => _winkSignInHandlerUI.Dispose();
 
@@ -94,7 +96,9 @@ namespace Agava.Wink
             StartCoroutine(Loading());
             IEnumerator Loading()
             {
+                Debug.Log($"Try load cloud saves");
                 yield return CloudSavesLoading();
+                Restarted?.Invoke();
                 _sceneLoader.LoadGameScene();
             }
         }
