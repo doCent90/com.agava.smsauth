@@ -12,6 +12,8 @@ namespace Agava.Wink
 
         private void Start()
         {
+            DontDestroyOnLoad(this);
+
             if (string.IsNullOrEmpty(_startSceneName))
                 throw new NullReferenceException("Start Name Scene is Empty on Boot!");
         }
